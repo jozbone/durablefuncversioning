@@ -1,4 +1,18 @@
-﻿namespace HttpSample.Breaking
+﻿//**************************************************************************************************
+//
+// This sample shows an example of a change to the return type of a function
+// (e.g., SignatureChangeDemo_Hello) so that it returns a string instead of a bool, after
+// which the durable function checkpoints. New instance will work, but in-flight instance
+// will fail. If the signature change is deployed at this point, the checkpointed instance
+// will fail immediately when it resumes and replays the call to
+// context.CallActivityAsync<bool>("SignatureChangeDemo_Hello"). This failure happens
+// because the result in the history table is string but the new code tries to deserialize
+// it into a bool.
+//
+// Ref: https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-versioning
+//**************************************************************************************************
+
+namespace HttpSample.Breaking
 {
     using System;
     using System.Collections.Generic;
@@ -20,49 +34,52 @@
         {
             var outputs = new List<string>();
 
-            // Replace "hello" with the name of your Durable Activity Function.
-            var helloMessage = await context.CallActivityAsync<string>("SignatureChangeDemo_Hello", "Getting here");
-            
-            // bool version
-            // var helloMessage = await context.CallActivityAsync<bool>("SignatureChangeDemo_Hello", "Getting here");
-            outputs.Add(helloMessage.ToString());
-
-            using (var timeoutCts = new CancellationTokenSource())
+            try
             {
-                var dueTime = context.CurrentUtcDateTime.Add(TimeSpan.FromMinutes(10.00));
-                var signatureChangeDemoEvent = context.WaitForExternalEvent<bool>("SignatureChangeDemoEvent");
-                var durableTimeout = context.CreateTimer(dueTime, timeoutCts.Token);
-                var response = await Task.WhenAny(signatureChangeDemoEvent, durableTimeout);
+                var helloMessage = await context.CallActivityAsync<string>("SignatureChangeDemo_Hello", "Getting here");
 
-                try
+                // bool version
+                // var helloMessage = await context.CallActivityAsync<bool>("SignatureChangeDemo_Hello", "Getting here");
+
+                outputs.Add(helloMessage.ToString());
+
+                using (var timeoutCts = new CancellationTokenSource())
                 {
+                    var dueTime = context.CurrentUtcDateTime.Add(TimeSpan.FromMinutes(10.00));
+                    var signatureChangeDemoEvent = context.WaitForExternalEvent<bool>("SignatureChangeDemoEvent");
+                    var durableTimeout = context.CreateTimer(dueTime, timeoutCts.Token);
+                    var response = await Task.WhenAny(signatureChangeDemoEvent, durableTimeout);
+
+
                     // outputs.Add(await context.CallActivityAsync<string>("SignatureChangeDemo_OutputMessage", signatureChangeDemoEvent.Result));
-                    outputs.Add(await context.CallActivityAsync<string>("SignatureChangeDemo_OutputMessage", helloMessage));
-                }
-                catch (Exception ex)
-                {
-                    outputs.Add(ex.Message);
+                    outputs.Add(await context.CallActivityAsync<string>("SignatureChangeDemo_OutputMessage",
+                        helloMessage));
                 }
             }
+            catch (Exception ex)
+            {
+                outputs.Add(ex.Message);
+            }
+
 
             return outputs;
         }
 
         // Original version
-        [FunctionName("SignatureChangeDemo_Hello")]
-        public static string SayHello([ActivityTrigger] string name, ILogger log)
-        {
-            log.LogInformation($"Saying hello to {name}.");
-            return "true";
-        }
-
-        // Change version 1
         // [FunctionName("SignatureChangeDemo_Hello")]
-        // public static bool SayHello([ActivityTrigger] string name, ILogger log)
+        // public static string SayHello([ActivityTrigger] string name, ILogger log)
         // {
         //     log.LogInformation($"Saying hello to {name}.");
-        //     return true;
+        //     return "true";
         // }
+
+        // Change version 1
+        [FunctionName("SignatureChangeDemo_Hello")]
+        public static bool SayHello([ActivityTrigger] string name, ILogger log)
+        {
+            log.LogInformation($"Saying hello to {name}.");
+            return true;
+        }
 
         // Change version 1
         // [FunctionName("SignatureChangeDemo_OutputMessage")]
