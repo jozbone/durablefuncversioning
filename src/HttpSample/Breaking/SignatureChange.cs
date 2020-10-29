@@ -22,7 +22,10 @@
 
             // Replace "hello" with the name of your Durable Activity Function.
             var helloMessage = await context.CallActivityAsync<string>("SignatureChangeDemo_Hello", "Getting here");
-            outputs.Add(helloMessage);
+            
+            // bool version
+            // var helloMessage = await context.CallActivityAsync<bool>("SignatureChangeDemo_Hello", "Getting here");
+            outputs.Add(helloMessage.ToString());
 
             using (var timeoutCts = new CancellationTokenSource())
             {
@@ -45,12 +48,21 @@
             return outputs;
         }
 
+        // Original version
         [FunctionName("SignatureChangeDemo_Hello")]
         public static string SayHello([ActivityTrigger] string name, ILogger log)
         {
             log.LogInformation($"Saying hello to {name}.");
-            return $"Hello {name}!";
+            return "true";
         }
+
+        // Change version 1
+        // [FunctionName("SignatureChangeDemo_Hello")]
+        // public static bool SayHello([ActivityTrigger] string name, ILogger log)
+        // {
+        //     log.LogInformation($"Saying hello to {name}.");
+        //     return true;
+        // }
 
         // Change version 1
         // [FunctionName("SignatureChangeDemo_OutputMessage")]
@@ -63,7 +75,7 @@
 
         // Change version 2
         [FunctionName("SignatureChangeDemo_OutputMessage")]
-        public static bool OutputMessage([ActivityTrigger] string msg, ILogger log)
+        public static bool OutputMessage([ActivityTrigger] bool msg, ILogger log)
         {
              log.LogInformation($"{msg}.");
              return true;
