@@ -61,25 +61,24 @@ namespace HttpSample.Breaking
                 outputs.Add(ex.Message);
             }
 
-
             return outputs;
         }
 
         // Original version
-        // [FunctionName("SignatureChangeDemo_Hello")]
-        // public static string SayHello([ActivityTrigger] string name, ILogger log)
-        // {
-        //     log.LogInformation($"Saying hello to {name}.");
-        //     return "true";
-        // }
-
-        // Change version 1
         [FunctionName("SignatureChangeDemo_Hello")]
-        public static bool SayHello([ActivityTrigger] string name, ILogger log)
+        public static string SayHello([ActivityTrigger] string name, ILogger log)
         {
             log.LogInformation($"Saying hello to {name}.");
-            return true;
+            return "123";
         }
+
+        // Change version 1
+        // [FunctionName("SignatureChangeDemo_Hello")]
+        // public static int SayHello([ActivityTrigger] string name, ILogger log)
+        // {
+        //     log.LogInformation($"Saying hello to {name}.");
+        //     return 123;
+        // }
 
         // Change version 1
         // [FunctionName("SignatureChangeDemo_OutputMessage")]
